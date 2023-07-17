@@ -5,6 +5,11 @@ import json
 import requests
 from threading import Timer
 import datetime
+import time
+import hmac
+import hashlib
+import base64
+import urllib.parse
 
 """
 自行登录 https://bm.ruankao.org.cn/index.php/query/score 获取Cookie
@@ -16,46 +21,77 @@ headers = {
 }
 # 登录 http://www.pushplus.plus/ 将token填入
 PUSHPLUS_TOKEN = ''
+
+# 钉钉机器人，配置如下
+# https://open.dingtalk.com/document/isvapp/custom-bot-access-send-message
+DINGTALK_ACCESS_TOKEN = ''
+DINGTALK_SECRET = ''
+
 # 循环间隔秒数
 SLEEP_SECOND = 600
 
 
-def pushplus(r, title=None):
+def pushplus(content, title=None):
     data = {
         'token': PUSHPLUS_TOKEN,
         'template': 'json',
         'title': title,
-        'content': json.dumps(r)
+        'content': content
     }
-    r = requests.post("http://www.pushplus.plus/send", data=data)
+    r = requests.post("http://www.pushplus.plus/send", json=data, headers={"Content-Type": "application/json"})
     # print(r.text)
     return r
+
+
+def dingtalk(content='ding'):
+    timestamp = str(round(time.time() * 1000))
+    secret_enc = DINGTALK_SECRET.encode('utf-8')
+    string_to_sign = '{}\n{}'.format(timestamp, DINGTALK_SECRET)
+    string_to_sign_enc = string_to_sign.encode('utf-8')
+    hmac_code = hmac.new(secret_enc, string_to_sign_enc, digestmod=hashlib.sha256).digest()
+    sign = urllib.parse.quote_plus(base64.b64encode(hmac_code))
+    url = f'https://api.dingtalk.com/robot/send?access_token={DINGTALK_ACCESS_TOKEN}&timestamp={timestamp}&sign={sign}'
+    data = {
+        'msgtype': 'text',
+        'text': {'content': content},
+        "at": {
+            "isAtAll": True
+        }
+    }
+    r = requests.post(url, data=json.dumps(data), headers={"Content-Type": "application/json"})
+    return r
+
+
+def push(content, title=None):
+    print(content)
+
+    if len(PUSHPLUS_TOKEN) == 32:
+        pushplus(content, title)
+
+    if len(DINGTALK_ACCESS_TOKEN) > 0 and len(DINGTALK_SECRET) > 0:
+        dingtalk(content)
+    return
 
 
 def score(taskID=100002230302151239194259):
     r = requests.post("https://bm.ruankao.org.cn/my/myscore/getinfo",
                       data={'ExamTaskID': taskID}, headers=headers)
-    rk = {}
     if r.text.startswith("<!DOCTYPE html>"):
-        rk.update({"Cookie": "已失效，请重新获取!"})
-        print(rk)
-        if len(PUSHPLUS_TOKEN) == 32:
-            pushplus(rk, 'Cookie失效啦')
+        push("Cookie已失效，请重新获取!", 'Cookie失效啦')
     else:
         rs = json.loads(r.text)
         print("查询时间：%s" % datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
         if rs['flag'] == '1':
+            content = {}
             rs = rs['data'][0]
-            rk.update({'考试时间': rs['TaskName']})
-            rk.update({'资格名称': rs['ProfessionName']})
+            content.update({'考试时间': rs['TaskName']})
+            content.update({'资格名称': rs['ProfessionName']})
             rs = rs['Score']
             for r in rs:
                 if r['Score'] != "-" and float(r['Score']) >= 45:
                     r['Score'] += " -> pass"
-                rk.update({r['SubjectName']: r['Score']})
-            print(rk)
-            if len(PUSHPLUS_TOKEN) == 32:
-                pushplus(rk, '成绩出来啦')
+                content.update({r['SubjectName']: r['Score']})
+            push(content, '成绩出来啦')
         else:
             print(rs)
             if rs['msg'] == '暂无成绩':
