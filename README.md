@@ -1,7 +1,7 @@
 # Ruankao
 2023年最新软考查分，内置循环无须配置crontab，支持循环间隔时间配置
 
-支持微信公众号、钉钉机器人提醒，可自行选择是否提醒
+支持微信公众号、企微机器人、钉钉机器人提醒，可自由搭配提醒方式
 
 
 ## 安装
@@ -15,8 +15,9 @@
 - 可选
     - 支持微信公众号推送，注册 [pushplus(推送加)](http://www.pushplus.plus/) ，填入PUSHPLUS_TOKEN
     - 支持钉钉机器人推送，设置如下 [自定义机器人接入](https://open.dingtalk.com/document/isvapp/custom-bot-access-send-message)，填入DINGTALK_ACCESS_TOKEN和DINGTALK_SECRET
+    - 支持企微机器人推送，设置如下 [如何设置群机器人 ](https://open.work.weixin.qq.com/help2/pc/14931)，填入WECHAT_KEY
+    - 
     - 循环间隔时间默认为600秒(10分钟)，如需修改直接修改 [SLEEP_SECOND] 值
-
 
 ## Contributing
 

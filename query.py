@@ -19,13 +19,18 @@ Cookie 必填项目为PHPSESSID、SERVERID、acw_tc
 headers = {
     'Cookie': ''
 }
-# 登录 http://www.pushplus.plus/ 将token填入
+# 微信公众号推送
+# http://www.pushplus.plus/ 将token填入
 PUSHPLUS_TOKEN = ''
 
-# 钉钉机器人，配置如下
+# 钉钉机器人
 # https://open.dingtalk.com/document/isvapp/custom-bot-access-send-message
 DINGTALK_ACCESS_TOKEN = ''
 DINGTALK_SECRET = ''
+
+# 企微机器人
+# https://open.work.weixin.qq.com/help2/pc/14931
+WECHAT_KEY = ''
 
 # 循环间隔秒数
 SLEEP_SECOND = 600
@@ -62,6 +67,20 @@ def dingtalk(content='ding'):
     return r
 
 
+def wechat(content='wechat'):
+    url = f'https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key={WECHAT_KEY}'
+    data = {
+        'msgtype': 'text',
+        'text': {
+            'content': content,
+            "mentioned_list": ["@all"],
+            "mentioned_mobile_list": ["@all"]
+        }
+    }
+    r = requests.post(url, data=json.dumps(data), headers={"Content-Type": "application/json"})
+    return r
+
+
 def push(content, title=None):
     print(content)
 
@@ -70,6 +89,10 @@ def push(content, title=None):
 
     if len(DINGTALK_ACCESS_TOKEN) > 0 and len(DINGTALK_SECRET) > 0:
         dingtalk(content)
+
+    if len(WECHAT_KEY) > 0:
+        wechat(content)
+
     return
 
 
