@@ -10,6 +10,7 @@ import hmac
 import hashlib
 import base64
 import urllib.parse
+import daemon
 
 """
 自行登录 https://bm.ruankao.org.cn/index.php/query/score 获取Cookie
@@ -82,7 +83,7 @@ def wechat(content='wechat'):
 
 
 def push(content, title=None):
-    print(content)
+    # print(content)
 
     if len(PUSHPLUS_TOKEN) == 32:
         pushplus(content, title)
@@ -103,10 +104,10 @@ def score(taskID=100002230302151239194259):
         push("Cookie已失效，请重新获取!", 'Cookie失效啦')
     else:
         rs = json.loads(r.text)
-        print("查询时间：%s" % datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
         if rs['flag'] == '1':
             content = {}
             rs = rs['data'][0]
+            content.update({'查询时间': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')})
             content.update({'考试时间': rs['TaskName']})
             content.update({'资格名称': rs['ProfessionName']})
             rs = rs['Score']
@@ -116,7 +117,7 @@ def score(taskID=100002230302151239194259):
                 content.update({r['SubjectName']: r['Score']})
             push(content, '成绩出来啦')
         else:
-            print(rs)
+            # print(rs)
             if rs['msg'] == '暂无成绩':
                 loop_score(SLEEP_SECOND)
 
@@ -127,4 +128,5 @@ def loop_score(sleep=600):
 
 
 if __name__ == '__main__':
-    score()
+    with daemon.DaemonContext():
+        score()
